@@ -157,6 +157,9 @@ def main(
         console.print(t)
         return
 
+    # ── Every run gets its own profile, never overwrites a previous one ────
+    profile_name = f"{profile_name}_{time.strftime('%Y%m%d_%H%M%S')}"
+
     # ── Resolve inputs (CLI flags win, else fall back to config.json) ──────
     if browsers:
         browser_list = list(browsers)
