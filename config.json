@@ -1,0 +1,13 @@
+{
+    "_comment": "BrowserVault Demo Data Populator - Configuration",
+
+    "personas": 2,
+    "seed": null,
+
+    "profile_name": "BVaultDemo",
+
+    "browsers": "auto",
+    "categories": "all",
+
+    "dry_run": false
+}
