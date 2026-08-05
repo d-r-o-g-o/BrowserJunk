@@ -35,7 +35,29 @@ from core.browsers import (
     detect_installed_browsers,
 )
 from core.persona import generate_personas
-from core.helpers import get_logger, save_reports
+from core.helpers import OUTPUT_DIR, get_logger, save_reports
+
+_CHROMIUM_EXE = {"chrome": "chrome.exe", "edge": "msedge.exe", "brave": "brave.exe"}
+
+
+def _write_launcher(pop) -> Path | None:
+    """Write a one-click .bat that opens this exact demo profile directly,
+    bypassing the fact that a normal double-click always reopens the last
+    active profile instead of a newly created one."""
+    if pop.key == "firefox":
+        exe, args = "firefox.exe", f'-P "{pop.demo_profile}"'
+    else:
+        exe = _CHROMIUM_EXE.get(pop.key)
+        if not exe:
+            return None
+        args = f'--profile-directory="{pop.demo_profile}"'
+
+    path = OUTPUT_DIR / f"open_{pop.key}_{pop.demo_profile}.bat"
+    path.write_text(
+        f'@echo off\r\nstart "" "{exe}" {args}\r\n',
+        encoding="utf-8",
+    )
+    return path
 
 console = Console()
 logger = get_logger("cli")
@@ -216,6 +238,7 @@ def main(
     # ── Run population ────────────────────────────────────────────────────
     all_results: dict = {}
     browsers_run: list[str] = []
+    launchers: list[Path] = []
     start = time.time()
 
     for pop in pop_list:
@@ -223,10 +246,22 @@ def main(
         result = pop.run()
         all_results.update(result)
         browsers_run.append(pop.name)
+        if not dry_run:
+            launcher = _write_launcher(pop)
+            if launcher:
+                launchers.append(launcher)
 
     elapsed = time.time() - start
     console.rule("[bold green]Complete[/bold green]")
     console.print(f"\n[green]✓[/green] All done in [bold]{elapsed:.1f}s[/bold].")
+
+    if launchers:
+        console.print(
+            "\n[cyan]A normal double-click reopens your regular profile — "
+            "use these to open the demo profile directly:[/cyan]"
+        )
+        for path in launchers:
+            console.print(f"  [cyan]{path}[/cyan]")
 
     # ── Reports ───────────────────────────────────────────────────────────
     if not no_report and all_results:
